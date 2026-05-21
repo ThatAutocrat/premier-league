@@ -1,4 +1,4 @@
-# ⚽ Premier League Tracker
+# ⚽ Premier League Tracker (Sup-tsu)
 
 A real-time Premier League tracker built with **Elixir + Phoenix LiveView**.
 
