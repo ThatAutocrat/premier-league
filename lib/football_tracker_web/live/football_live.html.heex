@@ -1,0 +1,235 @@
+<div class="app-shell">
+
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">PL</div>
+        <span class="brand-name">Sup-tsu</span>
+      </div>
+      <div class="header-status">
+        <%= if @last_updated do %>
+          <span class="live-dot"></span>
+          <%= Calendar.strftime(@last_updated, "%H:%M") %> UTC
+        <% else %>
+          <span class="connecting-pulse">Connecting…</span>
+        <% end %>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ────────────────────────────────────────────────── -->
+  <div class="content-wrap">
+
+    <!-- Hero -->
+    <div class="hero fade-up">
+      <span class="hero-eyebrow">2024 · 2025 Season</span>
+      <h1 class="hero-title">Premier League</h1>
+      <p class="hero-subtitle">Live standings, results &amp; upcoming fixtures</p>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar fade-up delay-1">
+      <%= for {label, tab} <- [{"Standings", "standings"}, {"Results", "results"}, {"Fixtures", "fixtures"}] do %>
+        <button
+          phx-click="switch_tab"
+          phx-value-tab={tab}
+          class={["tab-btn", if(@active_tab == tab, do: "tab-btn--active", else: "")]}
+        >
+          <%= label %>
+        </button>
+      <% end %>
+    </div>
+
+    <!-- Loading -->
+    <%= if @loading do %>
+      <div class="loading-state fade-up delay-2">
+        <div class="spinner"></div>
+        <span class="loading-text">Loading Premier League data…</span>
+      </div>
+    <% end %>
+
+    <!-- ── STANDINGS ──────────────────────────────────────────── -->
+    <%= if !@loading && @active_tab == "standings" do %>
+      <div class="glass-card fade-up delay-2">
+
+        <div class="legend-bar">
+          <div class="legend-item">
+            <div class="legend-swatch legend-swatch--cl"></div>
+            Champions League
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch legend-swatch--el"></div>
+            Europa League
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch legend-swatch--rel"></div>
+            Relegation
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Club</th>
+                <th class="center">P</th>
+                <th class="center">W</th>
+                <th class="center">D</th>
+                <th class="center">L</th>
+                <th class="center col-gf">GF</th>
+                <th class="center col-ga">GA</th>
+                <th class="center">GD</th>
+                <th class="center">Pts</th>
+                <th class="center">Form</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for team <- @standings do %>
+                <tr class={zone_class(team.position)}>
+                  <td class="td-rank"><%= team.position %></td>
+
+                  <td>
+                    <div class="team-cell">
+                      <%= if team.team_badge && team.team_badge != "" do %>
+                        <img src={team.team_badge} class="team-badge-img" alt={team.team} />
+                      <% end %>
+                      <span class="team-name"><%= team.team %></span>
+                    </div>
+                  </td>
+
+                  <td class="td-num"><%= team.played %></td>
+                  <td class="td-num"><%= team.won %></td>
+                  <td class="td-num"><%= team.drawn %></td>
+                  <td class="td-num"><%= team.lost %></td>
+                  <td class="td-num col-gf"><%= team.goals_for %></td>
+                  <td class="td-num col-ga"><%= team.goals_against %></td>
+
+                  <td class={["td-gd", gd_class(team.goal_diff)]}>
+                    <%= if team.goal_diff > 0, do: "+", else: "" %><%= team.goal_diff %>
+                  </td>
+
+                  <td class="td-pts"><%= team.points %></td>
+
+                  <td>
+                    <div class="form-dots">
+                      <%= for char <- String.graphemes(String.slice(team.form || "", -5, 5)) do %>
+                        <% {label, cls} = form_dot_class(char) %>
+                        <span class={["form-dot", "form-dot--#{cls}"]} title={label}><%= String.first(label) %></span>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+
+          <%= if @standings == [] do %>
+            <div class="empty-state">No standings data yet.</div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- ── RESULTS ────────────────────────────────────────────── -->
+    <%= if !@loading && @active_tab == "results" do %>
+      <div class="match-list fade-up delay-2">
+        <%= for match <- @results do %>
+          <div class="match-card">
+            <div class="match-meta">
+              Matchday <%= match.round %> &middot; <%= format_datetime(match.date) %>
+            </div>
+            <div class="match-row">
+
+              <!-- Home -->
+              <div class="match-team match-team--home">
+                <span class={["match-team-name", winner_class(match.home_score, match.away_score, :home)]}>
+                  <%= match.home_team %>
+                </span>
+                <%= if match.home_badge && match.home_badge != "" do %>
+                  <img src={match.home_badge} class="match-badge" alt={match.home_team} />
+                <% end %>
+              </div>
+
+              <!-- Score -->
+              <div class="score-block">
+                <span class={["score-num", score_class(match.home_score, match.away_score, :home)]}>
+                  <%= match.home_score %>
+                </span>
+                <span class="score-sep">–</span>
+                <span class={["score-num", score_class(match.away_score, match.home_score, :away)]}>
+                  <%= match.away_score %>
+                </span>
+              </div>
+
+              <!-- Away -->
+              <div class="match-team match-team--away">
+                <%= if match.away_badge && match.away_badge != "" do %>
+                  <img src={match.away_badge} class="match-badge" alt={match.away_team} />
+                <% end %>
+                <span class={["match-team-name", winner_class(match.away_score, match.home_score, :away)]}>
+                  <%= match.away_team %>
+                </span>
+              </div>
+
+            </div>
+          </div>
+        <% end %>
+        <%= if @results == [] do %>
+          <div class="empty-state">No results yet.</div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- ── FIXTURES ───────────────────────────────────────────── -->
+    <%= if !@loading && @active_tab == "fixtures" do %>
+      <div class="match-list fade-up delay-2">
+        <%= for match <- @fixtures do %>
+          <div class="match-card">
+            <div class="match-meta">
+              Matchday <%= match.round %> &middot; <%= format_datetime(match.date) %>
+              <%= if match.time && match.time != "" do %>
+                &middot; <span class="time-pill"><%= match.time %></span>
+              <% end %>
+            </div>
+            <div class="match-row">
+
+              <!-- Home -->
+              <div class="match-team match-team--home">
+                <span class="match-team-name"><%= match.home_team %></span>
+                <%= if match.home_badge && match.home_badge != "" do %>
+                  <img src={match.home_badge} class="match-badge" alt={match.home_team} />
+                <% end %>
+              </div>
+
+              <!-- VS -->
+              <div class="vs-block">
+                <span class="vs-label">vs</span>
+              </div>
+
+              <!-- Away -->
+              <div class="match-team match-team--away">
+                <%= if match.away_badge && match.away_badge != "" do %>
+                  <img src={match.away_badge} class="match-badge" alt={match.away_team} />
+                <% end %>
+                <span class="match-team-name"><%= match.away_team %></span>
+              </div>
+
+            </div>
+          </div>
+        <% end %>
+        <%= if @fixtures == [] do %>
+          <div class="empty-state">No upcoming fixtures.</div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- Footer -->
+    <div class="site-footer">
+      Data via <a href="https://www.thesportsdb.com" target="_blank">TheSportsDB</a>
+      &middot; Live via Phoenix LiveView
+    </div>
+
+  </div>
+</div>
