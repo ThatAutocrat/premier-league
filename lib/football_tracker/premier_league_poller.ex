@@ -14,7 +14,7 @@ defmodule FootballTracker.PremierLeaguePoller do
 
   # Premier League ID on TheSportsDB
   @league_id "4328"
-  @season "2024-2025"
+  @season "2025-2026"
   @poll_interval :timer.seconds(60)
   @pubsub_topic "premier_league"
   @base_url "https://www.thesportsdb.com/api/v1/json/3"
