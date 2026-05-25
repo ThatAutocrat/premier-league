@@ -17,7 +17,7 @@ defmodule FootballTracker.PremierLeaguePoller do
   @season "2025-2026"
   @poll_interval :timer.seconds(60)
   @pubsub_topic "premier_league"
-  @base_url "https://www.thesportsdb.com/api/v1/json/3"
+  @base_url "https://www.thesportsdb.com/api/v1/json/123"
 
   # ── Public API ────────────────────────────────────────────────
 
