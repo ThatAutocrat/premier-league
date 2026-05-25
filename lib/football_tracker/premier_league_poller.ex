@@ -65,8 +65,13 @@ defmodule FootballTracker.PremierLeaguePoller do
       {:ok, %{status_code: 200, body: body}} ->
         body
         |> Jason.decode!()
-        |> Map.get("table", [])
+        |> Map.get("table")
+        |> Kernel.||([])
         |> Enum.map(&parse_standing/1)
+
+      {:ok, %{status_code: status}} ->
+        Logger.warning("[PremierLeaguePoller] Standings unexpected status: #{status}")
+        []
 
       {:error, reason} ->
         Logger.error("[PremierLeaguePoller] Standings fetch failed: #{inspect(reason)}")
@@ -81,9 +86,14 @@ defmodule FootballTracker.PremierLeaguePoller do
       {:ok, %{status_code: 200, body: body}} ->
         body
         |> Jason.decode!()
-        |> Map.get("events", [])
+        |> Map.get("events")
+        |> Kernel.||([])
         |> Enum.take(10)
         |> Enum.map(&parse_event/1)
+
+      {:ok, %{status_code: status}} ->
+        Logger.warning("[PremierLeaguePoller] Results unexpected status: #{status}")
+        []
 
       {:error, reason} ->
         Logger.error("[PremierLeaguePoller] Results fetch failed: #{inspect(reason)}")
@@ -98,9 +108,14 @@ defmodule FootballTracker.PremierLeaguePoller do
       {:ok, %{status_code: 200, body: body}} ->
         body
         |> Jason.decode!()
-        |> Map.get("events", [])
+        |> Map.get("events")
+        |> Kernel.||([])
         |> Enum.take(10)
         |> Enum.map(&parse_event/1)
+
+      {:ok, %{status_code: status}} ->
+        Logger.warning("[PremierLeaguePoller] Fixtures unexpected status: #{status}")
+        []
 
       {:error, reason} ->
         Logger.error("[PremierLeaguePoller] Fixtures fetch failed: #{inspect(reason)}")
@@ -112,34 +127,34 @@ defmodule FootballTracker.PremierLeaguePoller do
 
   defp parse_standing(row) do
     %{
-      position:       to_int(row["intRank"]),
-      team:           row["strTeam"],
-      team_badge:     row["strTeamBadge"],
-      played:         to_int(row["intPlayed"]),
-      won:            to_int(row["intWin"]),
-      drawn:          to_int(row["intDraw"]),
-      lost:           to_int(row["intLoss"]),
-      goals_for:      to_int(row["intGoalsFor"]),
-      goals_against:  to_int(row["intGoalsAgainst"]),
-      goal_diff:      to_int(row["intGoalDifference"]),
-      points:         to_int(row["intPoints"]),
-      form:           row["strForm"] || ""
+      position:      to_int(row["intRank"]),
+      team:          row["strTeam"],
+      team_badge:    row["strTeamBadge"],
+      played:        to_int(row["intPlayed"]),
+      won:           to_int(row["intWin"]),
+      drawn:         to_int(row["intDraw"]),
+      lost:          to_int(row["intLoss"]),
+      goals_for:     to_int(row["intGoalsFor"]),
+      goals_against: to_int(row["intGoalsAgainst"]),
+      goal_diff:     to_int(row["intGoalDifference"]),
+      points:        to_int(row["intPoints"]),
+      form:          row["strForm"] || ""
     }
   end
 
   defp parse_event(event) do
     %{
-      id:           event["idEvent"],
-      home_team:    event["strHomeTeam"],
-      away_team:    event["strAwayTeam"],
-      home_score:   to_score(event["intHomeScore"]),
-      away_score:   to_score(event["intAwayScore"]),
-      date:         event["dateEvent"],
-      time:         event["strTime"],
-      status:       event["strStatus"],
-      round:        event["intRound"],
-      home_badge:   event["strHomeTeamBadge"],
-      away_badge:   event["strAwayTeamBadge"]
+      id:         event["idEvent"],
+      home_team:  event["strHomeTeam"],
+      away_team:  event["strAwayTeam"],
+      home_score: to_score(event["intHomeScore"]),
+      away_score: to_score(event["intAwayScore"]),
+      date:       event["dateEvent"],
+      time:       event["strTime"],
+      status:     event["strStatus"],
+      round:      event["intRound"],
+      home_badge: event["strHomeTeamBadge"],
+      away_badge: event["strAwayTeamBadge"]
     }
   end
 
@@ -148,17 +163,16 @@ defmodule FootballTracker.PremierLeaguePoller do
   defp to_int(val) when is_binary(val) do
     case Integer.parse(val) do
       {n, _} -> n
-      :error -> 0
+      :error  -> 0
     end
   end
 
-  # scores can be nil for upcoming matches
   defp to_score(nil), do: nil
   defp to_score(val) when is_integer(val), do: val
   defp to_score(val) when is_binary(val) do
     case Integer.parse(val) do
       {n, _} -> n
-      :error -> nil
+      :error  -> nil
     end
   end
 end
